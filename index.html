@@ -1,3 +1,85 @@
-<link rel="manifest" href="/site.webmanifest">
+<!DOCTYPE html>
+<html lang="en">
 
-Hello
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Website</title>
+    <link rel="icon" href="/favicon/favicon.ico" type="image/x-icon">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&display=swap');
+
+        * {
+            font-family: "Plus Jakarta Sans", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            font-style: normal;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        ul.top-navigation-bar {
+            display: flex;
+            width: 100%;
+            list-style-type: none;
+            margin: 0px;
+            padding: 0px;
+            overflow: hidden;
+            background-color: #ffffff;
+            box-shadow: 0px 0px 10px 3px rgb(208, 208, 208);
+        }
+
+        li {
+            display: flex;
+            flex-grow: 1;
+        }
+
+        li a {
+            display: flex;
+            flex-grow: 1;
+            color: rgb(0, 0, 0);
+            text-align: center;
+            padding: 25px 0px;
+            margin: 0px;
+            font-size: 1vw;
+            line-height: 1;
+            text-decoration: none;
+            transform: translateY(3px);
+        }
+
+        li a:hover {
+            background-color: #a4a4a4;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: center;
+            align-items: center;
+            align-content: center;
+        }
+
+        .display-font {
+            font-family: "Comfortaa", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 700;
+            font-style: normal;
+        }
+    </style>
+</head>
+
+<body>
+    <ul class="top-navigation-bar">
+        <li><a class="container display-font" href="#projects">PROJECTS</a></li>
+        <li><a class="container display-font" href="#games">GAMES</a></li>
+        <li><a class="container display-font" href="#contact">CONTACT</a></li>
+        <li><a class="container display-font" href="#bio">BIO</a></li>
+    </ul>
+</body>
+
+</html>
