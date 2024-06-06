@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Website</title>
+    <link rel="icon" href="/favicon/android-chrome-512x512.png">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&display=swap');
+
+        * {
+            font-family: "Plus Jakarta Sans", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            font-style: normal;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        ul.top-navigation-bar {
+            display: flex;
+            width: 100%;
+            list-style-type: none;
+            margin: 0px;
+            padding: 0px;
+            overflow: hidden;
+            background-color: #ffffff;
+            box-shadow: 0px 0px 10px 3px rgb(208, 208, 208);
+        }
+
+        li {
+            display: flex;
+            flex-grow: 1;
+        }
+
+        li a {
+            display: flex;
+            flex-grow: 1;
+            color: rgb(0, 0, 0);
+            text-align: center;
+            padding: 25px 0px;
+            margin: 0px;
+            font-size: 1vw;
+            line-height: 1;
+            text-decoration: none;
+            transform: translateY(3px);
+        }
+
+        li a:hover {
+            background-color: #a4a4a4;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: center;
+            align-items: center;
+            align-content: center;
+        }
+
+        .display-font {
+            font-family: "Comfortaa", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 700;
+            font-style: normal;
+        }
+    </style>
+    <script type="text/javascript" src="js/processing.min.js"></script>
+    <script type="text/javascript" src="init.js"></script>
+</head>
+
+<body>
+    <ul class="top-navigation-bar">
+        <li><a class="container display-font" href="#projects">PROJECTS</a></li>
+        <li><a class="container display-font" href="#games">GAMES</a></li>
+        <li><a class="container display-font" href="#contact">CONTACT</a></li>
+        <li><a class="container display-font" href="#bio">BIO</a></li>
+    </ul>
+    <script type="application/processing">
+
+import java.util.*;
+
+float interp(float x){
+  float s = 1.5;
+  //return(pow((x-1), 3) + 1);
+  float a = s*(x-.5)+.5;
+  return(2*(a*a*(3-2*a)-.5))/(2-(1-s)*(1-s)*(s+2))+0.5;
+}
+
+void immunityAnimation() {
+  colorMode(HSB, maxHue);
+  stroke(hue, maxHue, maxHue);
+  if (immunityStart < 1 && immune) {
+    immunityStart += 0.05;
+  }
+  if (immunityStart > 0 && !immune) {
+    immunityStart -= 0.05;
+  }
+  noFill();
+  strokeWeight(3);
+  ellipse(playerX, playerY, 30 * (pow(immunityStart - 1, 3) + 1), 30 * (pow(immunityStart - 1, 3) + 1));
+  colorMode(RGB, 255);
+}
+
+int spinnerDelay = 8;
+int spinnerRotateSpeed = .3;
+int spinnerSpeed = 1;
+int singleDelay = 3;
+int singleSpeed = 3;
+int spreadDelay = 8;
+int spreadSpeed = 2;
+int waveDelay = 24;
+int waveSpeed = 3;
+int auraLen = 5;
+int maxWeight = 8;
+
+abstract class Enemy {
+  int timer;
+  float x, y, theta, pTheta, spawnTimer, despawnTimer, auraTimer;
+  int health = maxHealth;
+  boolean firing = false;
+  abstract void fire();
+  
+  void damage(){
+    if(dist(x, y, mouseX, mouseY) <= aura && health > 0){
+      health --;
+      if(auraTimer < auraLen * maxWeight)
+        auraTimer ++;
+    } else {
+      if(auraTimer > 0)
+        auraTimer --;
+    }
+  }
+
+  void spawn(){
+    spawnTimer ++;
+  }
+
+  void despawn(){
+    despawnTimer ++;
+  }
+
+  void render() {
+    if (!score) {
+      colorMode(RGB, 255);
+      strokeWeight(1);
+      fill(255, 255);
+      stroke(0, 255);
+      ellipse(x, y, 20 * (interp(spawnTimer/spawnLen - despawnTimer/despawnLen)), 20 * interp(spawnTimer/spawnLen - despawnTimer/despawnLen));
+    }
+  }
+  void renderA() {
+    if (!score) {
+      strokeWeight(1);
+      colorMode(HSB, maxHue);
+      fill(hue, maxHue, maxHue, maxHue / 4);
+      stroke(hue, maxHue, maxHue, maxHue);
+      strokeCap(ROUND);
+      strokeWeight(max(spawnTimer/spawnLen - despawnTimer/despawnLen, 0) * (auraTimer / auraLen + 1));
+      line(x, y, playerX, playerY);
+      strokeWeight(1);
+      ellipse(x, y, 2 * aura * interp(spawnTimer/spawnLen - despawnTimer/despawnLen), 2 * aura * interp(spawnTimer/spawnLen - despawnTimer/despawnLen));
+      strokeWeight(3);
+      fill(hue, maxHue, maxHue, maxHue / 3);
+      if(health > 0){
+        ellipse(x, y, 2 * aura * (spawnTimer/spawnLen - health / maxHealth - despawnTimer/despawnLen), 2 * aura * (spawnTimer/spawnLen - health / maxHealth - despawnTimer/despawnLen));
+      } else {
+        ellipse(x, y, 2 * aura * interp(spawnTimer/spawnLen - despawnTimer/despawnLen), 2 * aura * interp(spawnTimer/spawnLen - despawnTimer/despawnLen));
+      }
+      colorMode(RGB, 255);
+      strokeWeight(1);
+    }
+  }
+}
+
+class Spinner extends Enemy {
+  Spinner(float a, float b) {
+    x = a;
+    y = b;
+  }
+  float theta = random(2 * PI);
+  void fire() {
+    if (firing == false) {
+      timer += 1;
+      if (timer > 30) {
+        if (random(20) < 1) {
+          firing = true;
+        }
+        timer = 0;
+      }
+    }
+    if (firing == true && timer > 180) {
+      firing = false;
+      timer = 0;
+    }
+    if (firing)
+      timer ++;
+    if (firing && timer % spinnerDelay == 0 && dist(x, y, playerX, playerY) > aura) {
+      bullets.add(new Bullet(x, y, cos(theta) * spinnerSpeed, sin(theta) * spinnerSpeed));
+      bullets.add(new Bullet(x, y, cos(theta + PI / 2)  * spinnerSpeed, sin(theta + PI / 2) * spinnerSpeed));
+      bullets.add(new Bullet(x, y, cos(theta + PI) * spinnerSpeed, sin(theta + PI) * spinnerSpeed));
+      bullets.add(new Bullet(x, y, cos(theta - PI / 2) * spinnerSpeed, sin(theta - PI / 2) * spinnerSpeed));
+      theta += spinnerRotateSpeed;
+      if (theta > 2 * PI) {
+        theta -= 2 * PI;
+      }
+    }
+  }
+}
+
+class Single extends Enemy {
+  float aimSpeed = 0.03;
+  Single(float a, float b) {
+    x = a;
+    y = b;
+    if (x < playerX) {
+      theta = -asin((y - playerY) / dist(x, y, playerX, playerY));
+    } else {
+      theta = PI + asin((y - playerY) / dist(x, y, playerX, playerY));
+    }
+  }
+  void fire() {
+    if (theta < 0) {
+      theta += 2 * PI;
+    }
+    theta %= 2 * PI;
+    if (x < playerX) {
+      //reset angle to [0, 2pi]
+      if (-asin((y - playerY) / dist(x, y, playerX, playerY)) < 0) {
+        pTheta = -asin((y - playerY) / dist(x, y, playerX, playerY)) + 2 * PI;
+      } else {
+        pTheta = -asin((y - playerY) / dist(x, y, playerX, playerY));
+      }
+      //tracking code
+      if (y > playerY) {
+        if (theta > pTheta) {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        } else if (pTheta - theta < PI) {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        } else {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        }
+      } else {
+        pTheta = -asin((y - playerY) / dist(x, y, playerX, playerY));
+        if (theta < pTheta) {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        } else if (theta - pTheta < PI) {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        } else {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        }
+      }
+    } else {
+      pTheta = PI + asin((y - playerY) / dist(x, y, playerX, playerY));
+      if (y < playerY) {
+        if (theta < pTheta) {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        } else if (theta - pTheta < PI) {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        } else {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        }
+      } else {
+        if (theta > pTheta) {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        } else if (pTheta - theta < PI) {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        } else {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        }
+      }
+    }
+    if (firing == false) {
+      timer += 1;
+      if (timer > 5) {
+        if (random(20) < 1) {
+          firing = true;
+        }
+        timer = 0;
+      }
+    }
+    if (firing == true && timer > 16) {
+      firing = false;
+      timer = 0;
+    }
+    if (firing) {
+      if (timer % singleDelay == 0 && dist(x, y, playerX, playerY) > aura) {
+        bullets.add(new Bullet(x, y, cos(theta) * singleSpeed, sin(theta) * singleSpeed));
+      }
+      timer ++;
+    }
+  }
+}
+
+class Spread extends Enemy {
+  float aimSpeed = 0.03;
+  Spread(float a, float b) {
+    x = a;
+    y = b;
+    if (x < playerX) {
+      theta = -asin((y - playerY) / dist(x, y, playerX, playerY));
+    } else {
+      theta = PI + asin((y - playerY) / dist(x, y, playerX, playerY));
+    }
+  }
+  void fire() {
+    if (theta < 0) {
+      theta += 2 * PI;
+    }
+    theta %= 2 * PI;
+    if (x < playerX) {
+      //reset angle to [0, 2pi]
+      if (-asin((y - playerY) / dist(x, y, playerX, playerY)) < 0) {
+        pTheta = -asin((y - playerY) / dist(x, y, playerX, playerY)) + 2 * PI;
+      } else {
+        pTheta = -asin((y - playerY) / dist(x, y, playerX, playerY));
+      }
+      //tracking code
+      if (y > playerY) {
+        if (theta > pTheta) {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        } else if (pTheta - theta < PI) {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        } else {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        }
+      } else {
+        pTheta = -asin((y - playerY) / dist(x, y, playerX, playerY));
+        if (theta < pTheta) {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        } else if (theta - pTheta < PI) {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        } else {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        }
+      }
+    } else {
+      pTheta = PI + asin((y - playerY) / dist(x, y, playerX, playerY));
+      if (y < playerY) {
+        if (theta < pTheta) {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        } else if (theta - pTheta < PI) {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        } else {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        }
+      } else {
+        if (theta > pTheta) {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        } else if (pTheta - theta < PI) {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        } else {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        }
+      }
+    }
+    if (firing == false) {
+      timer += 1;
+      if (timer > 5) {
+        if (random(20) < 1) {
+          firing = true;
+        }
+        timer = 0;
+      }
+    }
+    if (firing == true && timer > 16) {
+      firing = false;
+      timer = 0;
+    }
+    if (firing) {
+      if (timer % spreadDelay == 0 && dist(x, y, playerX, playerY) > aura) {
+        bullets.add(new Bullet(x, y, cos(theta - PI / 4) * spreadSpeed, sin(theta - PI / 4) * spreadSpeed));
+        bullets.add(new Bullet(x, y, cos(theta - PI / 8) * spreadSpeed, sin(theta - PI / 8) * spreadSpeed));
+        bullets.add(new Bullet(x, y, cos(theta + PI / 8) * spreadSpeed, sin(theta + PI / 8) * spreadSpeed));
+        bullets.add(new Bullet(x, y, cos(theta + PI / 4) * spreadSpeed, sin(theta + PI / 4) * spreadSpeed));
+      }
+      timer ++;
+    }
+  }
+}
+
+class Wave extends Enemy {
+  float aimSpeed = 0.03;
+  Wave(float a, float b) {
+    x = a;
+    y = b;
+    if (x < playerX) {
+      theta = -asin((y - playerY) / dist(x, y, playerX, playerY));
+    } else {
+      theta = PI + asin((y - playerY) / dist(x, y, playerX, playerY));
+    }
+  }
+  void fire() {
+    if (theta < 0) {
+      theta += 2 * PI;
+    }
+    theta %= 2 * PI;
+    if (x < playerX) {
+      //reset angle to [0, 2pi]
+      if (-asin((y - playerY) / dist(x, y, playerX, playerY)) < 0) {
+        pTheta = -asin((y - playerY) / dist(x, y, playerX, playerY)) + 2 * PI;
+      } else {
+        pTheta = -asin((y - playerY) / dist(x, y, playerX, playerY));
+      }
+      //tracking code
+      if (y > playerY) {
+        if (theta > pTheta) {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        } else if (pTheta - theta < PI) {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        } else {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        }
+      } else {
+        pTheta = -asin((y - playerY) / dist(x, y, playerX, playerY));
+        if (theta < pTheta) {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        } else if (theta - pTheta < PI) {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        } else {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        }
+      }
+    } else {
+      pTheta = PI + asin((y - playerY) / dist(x, y, playerX, playerY));
+      if (y < playerY) {
+        if (theta < pTheta) {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        } else if (theta - pTheta < PI) {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        } else {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        }
+      } else {
+        if (theta > pTheta) {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        } else if (pTheta - theta < PI) {
+          if (theta + aimSpeed > pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta += aimSpeed;
+          }
+        } else {
+          if (theta - aimSpeed < pTheta && abs(pTheta - theta) < PI) {
+            theta = pTheta;
+          } else {
+            theta -= aimSpeed;
+          }
+        }
+      }
+    }
+    if (firing == false) {
+      timer += 1;
+      if (timer > 5) {
+        if (random(20) < 1) {
+          firing = true;
+        }
+        timer = 0;
+      }
+    }
+    if (firing == true && timer > 16) {
+      firing = false;
+      timer = 0;
+    }
+    if (firing) {
+      if (timer % waveDelay == 0 && dist(x, y, playerX, playerY) > aura) {
+        bullets.add(new Bullet(x, y, cos(theta - PI / 20) * waveSpeed, sin(theta - PI / 20) * waveSpeed));
+        bullets.add(new Bullet(x, y, cos(theta - PI / 40) * waveSpeed, sin(theta - PI / 40) * waveSpeed));
+        bullets.add(new Bullet(x, y, cos(theta) * waveSpeed, sin(theta) * waveSpeed));
+        bullets.add(new Bullet(x, y, cos(theta + PI / 40) * waveSpeed, sin(theta + PI / 40) * waveSpeed));
+        bullets.add(new Bullet(x, y, cos(theta + PI / 20) * waveSpeed, sin(theta + PI / 20) * waveSpeed));
+      }
+      timer ++;
+    }
+  }
+}
+
+boolean dead = false;
+boolean score = false;
+int timeSurvived = 0;
+float hue = 0;
+float maxHue = 5000;
+int pulseTimer = 20;
+boolean immune = false;
+float immunityStart = 0;
+float aura = 100;
+int enemiesAmt = 4;
+float playerX;
+float playerY;
+float playerSpeed = 30;
+float playerTheta;
+int maxHealth = 200;
+int spawnLen = 30;
+int despawnLen = 30;
+
+ArrayList<Bullet> bullets = new ArrayList<Bullet>();
+ArrayList<Enemy> enemies = new ArrayList<Enemy>();
+ArrayList<Pulse> pulses = new ArrayList<Pulse>();
+ArrayList<Line> lines = new ArrayList<Line>();
+ArrayList<EmpBlast> empBlasts = new ArrayList<EmpBlast>();
+ArrayList<EmpPulse> empPulses = new ArrayList<EmpPulse>();
+
+class Bullet {
+  float x, y, h, dx, dy;
+  Bullet(float a, float b, float c, float d) {
+    x = a;
+    y = b;
+    dx = c;
+    dy = d;
+    h = hue;
+    hue ++;
+    if (hue > maxHue) {
+      hue = 0;
+    }
+  }
+  void render() {
+    if (!score) {
+      colorMode(RGB, 255);
+      stroke(0);
+      colorMode(HSB, maxHue);
+      fill(h, maxHue, maxHue);
+      ellipse(x, y, 10, 10);
+      colorMode(RGB, 255);
+      stroke(0);
+    }
+  }
+  void move() {
+    x += dx;
+    y += dy;
+  }
+}
+
+class Pulse {
+  float x, y, radius;
+  boolean enemy = false;
+  Pulse(float a, float b) {
+    x = a;
+    y = b;
+    radius = 0;
+  }
+  Pulse(float a, float b, boolean e) {
+    x = a;
+    y = b;
+    radius = 0;
+    enemy = e;
+  }
+  void render() {
+    if (!score) {
+      colorMode(HSB, maxHue);
+      noFill();
+      stroke(hue, maxHue, maxHue, 100 * maxHue / radius);
+      strokeWeight(1);
+      if(enemy)
+        strokeWeight(5);
+      ellipse(x, y, radius, radius);
+      colorMode(RGB, 255);
+      radius ++;
+    }
+  }
+}
+
+int die(Bullet b, int i) {
+  if (dist(playerX, playerY, b.x, b.y) < 5) {
+    if (immune) {
+      bullets.remove(b);
+      i -= 1;
+      immune = false;
+    } else {
+      fill(0);
+      textSize(50);
+      if (!score) {
+        text("You Died.", random(width), random(height));
+      }
+      dead = true;
+    }
+  }
+  return i;
+}
+
+void deco() {
+  strokeWeight(20);
+  colorMode(HSB, maxHue);
+  stroke(hue, maxHue, maxHue);
+  line(0, 0, width, 0);
+  line(width, 0, width, height);
+  line(width, height, 0, height);
+  line(0, height, 0, 0);
+  strokeWeight(1);
+  colorMode(RGB, 255);
+}
+
+void spawnEnemy() {
+  switch((int) random(4)) {
+  case 0:
+    enemies.add(new Spinner((int) random(20, width - 20), (int) random(20, height - 20)));
+    break;
+  case 1:
+    enemies.add(new Single((int) random(20, width - 20), (int) random(20, height - 20)));
+    break;
+  case 2:
+    enemies.add(new Spread((int) random(20, width - 20), (int) random(20, height - 20)));
+    break;
+  case 3:
+    enemies.add(new Wave((int) random(20, width - 20), (int) random(20, height - 20)));
+  }
+}
+
+void playerThetaCalc() {
+  if (playerX < mouseX) {
+    playerTheta = asin((mouseY - playerY) / dist(mouseX, mouseY, playerX, playerY));
+  } else if (playerX > mouseX) {
+    playerTheta = -asin((mouseY - playerY) / dist(mouseX, mouseY, playerX, playerY)) + PI;
+  } else if (playerX == mouseX) {
+    if (playerY < mouseY) {
+      playerTheta = PI / 2;
+    } else {
+      playerTheta = PI + PI / 2;
+    }
+  }
+}
+
+void move() {
+  if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+    if (dist(mouseX, mouseY, playerX, playerY) < 100) {
+      playerX = mouseX;
+      playerY = mouseY;
+    } else {
+      playerTheta += TAU;
+      playerTheta %= TAU;
+      playerX += cos(playerTheta) * playerSpeed;
+      playerY += sin(playerTheta) * playerSpeed;
+    }
+  }
+}
+
+void mouseClicked() {
+  if (dead) {
+    score = true;
+    background(255);
+    textSize(20);
+    textAlign(CENTER);
+    fill(0);
+    text("Score: " + enemiesAmt + " enemies.", width/2, height/2);
+  }
+}
+
+void setup() {
+  size(1000, 600, P2D);
+  playerX = width / 2;
+  playerY = height / 2;
+  noCursor();
+}
+
+void draw() {
+  if (!dead) {
+    background(255);
+    colorMode(HSB, maxHue);
+    fill(hue, maxHue, maxHue);
+    playerThetaCalc();
+    move();
+    ellipse(playerX, playerY, 5, 5);
+    colorMode(RGB, 255);
+    if (immunityStart <= 0 && !immune) {
+      immune = true;
+    }
+    immunityAnimation();
+    /*teleportCheck();
+    smallEmpCheck();
+    bigEmpCheck();*/
+    timeSurvived ++;
+  }
+
+  if (timeSurvived % 20 == 0) {
+    pulses.add(new Pulse(playerX, playerY));
+  }
+
+  for (int i = 0; i < pulses.size(); i ++) {
+    Pulse p = pulses.get(i);
+    p.render();
+    if (p.radius > 2 * dist(0, 0, width, height)) {
+      pulses.remove(p);
+      i --;
+    }
+  }
+
+  /*while (enemies.size() < enemiesAmt) {
+    spawnEnemy();
+  }*/
+  
+  if(enemies.size() == 0){
+    enemiesAmt++;
+    for(int i = 0; i < enemiesAmt; i ++){
+      spawnEnemy();
+    }
+  }
+
+  for (int i = 0; i < enemies.size(); i ++) {
+    Enemy e = enemies.get(i);
+    e.renderA();
+    if(e.spawnTimer < spawnLen)
+      e.spawn();
+    if(e.health > 0)
+      e.fire();
+    if (e.health <= 0) {
+      e.despawn();
+      if (e.despawnTimer >= despawnLen) {
+        pulses.add(new Pulse(e.x, e.y, true));
+        enemies.remove(e);
+        i --;
+      }
+    }
+    e.damage();
+  }
+
+  for (Enemy e : enemies) {
+    e.render();
+  }
+
+  for (int i = 0; i < bullets.size(); i ++) {
+    Bullet b = bullets.get(i);
+    b.move();
+    if (b.x > width || b.x < 0 || b.y > height || b.y < 0) {
+      bullets.remove(b);
+      i --;
+    }
+    /*if (dist(playerX, playerY, b.x, b.y) <= 250 && smallEmp) {
+      bullets.remove(b);
+      i --;
+    }
+    for (EmpPulse e : empPulses) {
+      if (dist(e.x, e.y, b.x, b.y) <= e.radius + 5) {
+        bullets.remove(b);
+        i --;
+      }
+    }*/
+    i = die(b, i);
+    b.render();
+  }
+  /*teleportAnimation();
+  smallEmpAnimation();
+  bigEmpAnimation();*/
+  deco();
+  if(!dead){
+    fill(0,0);
+    stroke(0);
+    ellipse(playerX, playerY, 5, 5);
+  }
+}
+
+    </script>
+    <canvas style="outline: 0"></canvas>
+</body>
+
+</html>
